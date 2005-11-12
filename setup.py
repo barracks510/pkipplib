@@ -22,11 +22,11 @@
 
 from distutils.core import setup
 
-import ipplib
+from ipplib import version
 
-setup(name = "ipplib", version = ipplib.version.__version__,
+setup(name = "ipplib", version = version.__version__,
       licence = "GNU GPL",
-      description = ipplib.version.__doc__,
+      description = version.__doc__,
       author = "Jerome Alet",
       author_email = "alet@librelogiciel.com",
       url = "http://www.librelogiciel.com/software/",
