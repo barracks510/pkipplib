@@ -608,7 +608,7 @@ class CUPS :
     def getJobAttributes(self, jobid) :    
         """Retrieves a print job's attributes."""
         req = self.newRequest(IPP_GET_JOB_ATTRIBUTES)
-        req.operation["job-uri"] = ("uri", "ipp://localhost:631/jobs/%s" % jobid)
+        req.operation["job-uri"] = ("uri", "%s/jobs/%s" % (self.url.replace("http://", "ipp://"), jobid))
         return req.doRequest()
         
             
