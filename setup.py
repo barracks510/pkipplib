@@ -26,7 +26,7 @@ from distutils.core import setup
 from ipplib import version
 
 setup(name = "ipplib", version = version.__version__,
-      licence = "GNU GPL",
+      license = "GNU GPL",
       description = version.__doc__,
       author = "Jerome Alet",
       author_email = "alet@librelogiciel.com",
