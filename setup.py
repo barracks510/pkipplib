@@ -21,9 +21,11 @@
 # $Id$
 #
 
+import os
+import imp
 from distutils.core import setup
 
-from ipplib import version
+version = imp.load_source("version", os.path.join("ipplib", "version.py"))
 
 setup(name = "ipplib", version = version.__version__,
       license = "GNU GPL",
@@ -31,5 +33,5 @@ setup(name = "ipplib", version = version.__version__,
       author = "Jerome Alet",
       author_email = "alet@librelogiciel.com",
       url = "http://www.librelogiciel.com/software/",
-      py_modules = [ "ipplib" ])
+      packages = [ "ipplib" ])
 
