@@ -590,6 +590,12 @@ class CUPS :
         self.charset = charset
         self.language = language
         
+    def identifierToURI(self, service, ident) :
+        """Transforms an identifier into a particular URI depending on requested service."""
+        return "%s/%s/%s" % (self.url.replace("http://", "ipp://"),
+                             service,
+                             ident)
+        
     def newRequest(self, operationid=None) :
         """Generates a new empty request."""
         if operationid is not None :
@@ -608,8 +614,16 @@ class CUPS :
     def getJobAttributes(self, jobid) :    
         """Retrieves a print job's attributes."""
         req = self.newRequest(IPP_GET_JOB_ATTRIBUTES)
-        req.operation["job-uri"] = ("uri", "%s/jobs/%s" % (self.url.replace("http://", "ipp://"), jobid))
+        req.operation["job-uri"] = ("uri", self.identifierToURI("jobs", jobid))
         return req.doRequest()
+        
+    def getPPD(self, queuename) :    
+        """Retrieves the PPD for a particular queuename."""
+        req = self.newRequest(IPP_GET_PRINTER_ATTRIBUTES)
+        req.operation["printer-uri"] = ("uri", self.identifierToURI("printers", queuename))
+        for attrib in ("printer-uri-supported", "printer-type", "member-uris") :
+            req.operation["requested-attributes"] = ("nameWithoutLanguage", attrib)
+        return req.doRequest()  # TODO : get the PPD from the actual print server
         
             
 if __name__ == "__main__" :            

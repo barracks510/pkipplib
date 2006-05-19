@@ -26,7 +26,8 @@ sys.path.insert(0, "../ipplib")
 import ipplib        
     
 cups = ipplib.CUPS()    
-answer = cups.getJobAttributes(566)
+answer = cups.getPPD("HL6050DN")
+#answer = cups.getJobAttributes(566)
 print answer
 #print answer.operation["attributes-charset"]
 
