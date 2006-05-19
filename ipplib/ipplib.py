@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 # -*- coding: ISO-8859-15 -*-
 #
-# ipplib : IPP support for Python
+# ipplib : IPP and CUPS support for Python
 #
-# (c) 2003, 2004, 2005 Jerome Alet <alet@librelogiciel.com>
+# (c) 2003, 2004, 2005, 2006 Jerome Alet <alet@librelogiciel.com>
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
@@ -244,13 +244,47 @@ class IPPError(Exception) :
         return self.message
     __str__ = __repr__
 
+class FakeAttribute :
+    """Fakes an IPPRequest attribute to simplify usage syntax."""
+    def __init__(self, request, name) :
+        """Initializes the fake attribute."""
+        self.request = request
+        self.name = name
+        
+    def __setitem__(self, key, value) :
+        """Appends the value to the real attribute."""
+        attributeslist = getattr(self.request, "_%s_attributes" % self.name)
+        for i in range(len(attributeslist)) :
+            attribute = attributeslist[i]
+            for j in range(len(attribute)) :
+                (attrname, attrvalue) = attribute[j]
+                if attrname == key :
+                    attribute[j][1].append(value)
+                    return
+            attribute.append((key, [value]))        
+            
+    def __getitem__(self, key) :
+        """Returns an attribute's value."""
+        attributeslist = getattr(self.request, "_%s_attributes" % self.name)
+        for i in range(len(attributeslist)) :
+            attribute = attributeslist[i]
+            for j in range(len(attribute)) :
+                (attrname, attrvalue) = attribute[j]
+                if attrname == key :
+                    return attrvalue
+        raise KeyError, key            
+    
 class IPPRequest :
     """A class for IPP requests."""
     attributes_types = ("operation", "job", "printer", "unsupported", \
                                      "subscription", "event_notification")
     def __init__(self, data="", version=IPP_VERSION, 
                                 operation_id=None, \
-                                request_id=None, debug=0) :
+                                request_id=None, \
+                                url = "http://localhost:631", \
+                                username = None, \
+                                password = None, \
+                                debug=False) :
         """Initializes an IPP Message object.
         
            Parameters :
@@ -258,9 +292,12 @@ class IPPRequest :
              data : the complete IPP Message's content.
              debug : a boolean value to output debug info on stderr.
         """
+        self.url = url
+        self.username = username
+        self.password = password
         self.debug = debug
         self._data = data
-        self.parsed = 0
+        self.parsed = False
         
         # Initializes message
         self.setVersion(version)                
@@ -269,7 +306,7 @@ class IPPRequest :
         self.data = ""
         
         for attrtype in self.attributes_types :
-            setattr(self, "%s_attributes" % attrtype, [[]])
+            setattr(self, "_%s_attributes" % attrtype, [[]])
         
         # Initialize tags    
         self.tags = [ None ] * 256 # by default all tags reserved
@@ -327,6 +364,13 @@ class IPPRequest :
             if value is not None :
                 self.tagvalues[value] = i
                                      
+    def __getattr__(self, name) :                                 
+        """Fakes attribute access."""
+        if name in self.attributes_types :
+            return FakeAttribute(self, name)
+        else :
+            raise AttributeError, name
+            
     def __str__(self) :        
         """Returns the parsed IPP message in a readable form."""
         if not self.parsed :
@@ -336,7 +380,7 @@ class IPPRequest :
         mybuffer.append("IPP operation Id : 0x%04x" % self.operation_id)
         mybuffer.append("IPP request Id : 0x%08x" % self.request_id)
         for attrtype in self.attributes_types :
-            for attribute in getattr(self, "%s_attributes" % attrtype) :
+            for attribute in getattr(self, "_%s_attributes" % attrtype) :
                 if attribute :
                     mybuffer.append("%s attributes :" % attrtype.title())
                 for (name, value) in attribute :
@@ -387,12 +431,14 @@ class IPPRequest :
            Returns the message as a string of text.
         """    
         mybuffer = []
-        if None not in (self.version, self.operation_id, self.request_id) :
+        if None not in (self.version, self.operation_id) :
+            if self.request_id is None :
+                self.nextRequestId()
             mybuffer.append(chr(self.version[0]) + chr(self.version[1]))
             mybuffer.append(pack(">H", self.operation_id))
             mybuffer.append(pack(">I", self.request_id))
             for attrtype in self.attributes_types :
-                for attribute in getattr(self, "%s_attributes" % attrtype) :
+                for attribute in getattr(self, "_%s_attributes" % attrtype) :
                     if attribute :
                         mybuffer.append(chr(self.tagvalues["%s-attributes-tag" % attrtype]))
                     for (attrname, value) in attribute :
@@ -452,7 +498,7 @@ class IPPRequest :
             raise IPPError, "Unexpected end of IPP message."
             
         self.data = self._data[self.position+1:]            
-        self.parsed = 1            
+        self.parsed = True
         
     def parseTag(self) :    
         """Extracts information from an IPP tag."""
@@ -487,42 +533,44 @@ class IPPRequest :
         
     def operation_attributes_tag(self) : 
         """Indicates that the parser enters into an operation-attributes-tag group."""
-        self._curattributes = self.operation_attributes
+        self._curattributes = self._operation_attributes
         return self.parseTag()
         
     def job_attributes_tag(self) : 
         """Indicates that the parser enters into a job-attributes-tag group."""
-        self._curattributes = self.job_attributes
+        self._curattributes = self._job_attributes
         return self.parseTag()
         
     def printer_attributes_tag(self) : 
         """Indicates that the parser enters into a printer-attributes-tag group."""
-        self._curattributes = self.printer_attributes
+        self._curattributes = self._printer_attributes
         return self.parseTag()
         
     def unsupported_attributes_tag(self) : 
         """Indicates that the parser enters into an unsupported-attributes-tag group."""
-        self._curattributes = self.unsupported_attributes
+        self._curattributes = self._unsupported_attributes
         return self.parseTag()
         
     def subscription_attributes_tag(self) : 
         """Indicates that the parser enters into a subscription-attributes-tag group."""
-        self._curattributes = self.subscription_attributes
+        self._curattributes = self._subscription_attributes
         return self.parseTag()
         
     def event_notification_attributes_tag(self) : 
         """Indicates that the parser enters into an event-notification-attributes-tag group."""
-        self._curattributes = self.event_notification_attributes
+        self._curattributes = self._event_notification_attributes
         return self.parseTag()
         
-    def doRequest(self, url=None, username=None, password=None) :
+    def doRequest(self, url=None, username=None, password=None, samerequestid=False) :
         """Sends the current request to the URL.
            NB : only ipp:// URLs are currently unsupported so use
            either http://host:631/ or https://host:443 instead...
            
            returns a new IPPRequest object, containing the parsed answer.
         """   
-        cx = urllib2.Request(url=url or "http://localhost:631/", 
+        if not samerequestid :
+            self.nextRequestId()
+        cx = urllib2.Request(url=url or self.url or "http://localhost:631/", 
                              data=self.dump())
         cx.add_header("Content-Type", "application/ipp")
         response = urllib2.urlopen(cx)
@@ -530,6 +578,39 @@ class IPPRequest :
         ippresponse = IPPRequest(datas)
         ippresponse.parse()
         return ippresponse
+        
+            
+class CUPS :
+    """A class for a CUPS instance."""
+    def __init__(self, url="http://localhost:631", username=None, password=None, charset="utf-8", language="en-us") :
+        """Initializes the CUPS instance."""
+        self.url = url
+        self.username = username
+        self.password = password
+        self.charset = charset
+        self.language = language
+        
+    def newRequest(self, operationid=None) :
+        """Generates a new empty request."""
+        if operationid is not None :
+            req = IPPRequest(operation_id=operationid, \
+                             url=self.url, \
+                             username=self.username, \
+                             password=self.password)
+            req.operation["attributes-charset"] = ("charset", self.charset)
+            req.operation["attributes-natural-language"] = ("naturalLanguage", self.language)
+            return req
+    
+    def getDefault(self) :
+        """Retrieves CUPS' default printer."""
+        return self.newRequest(CUPS_GET_DEFAULT).doRequest()
+    
+    def getJobAttributes(self, jobid) :    
+        """Retrieves a print job's attributes."""
+        req = self.newRequest(IPP_GET_JOB_ATTRIBUTES)
+        req.operation["job-uri"] = ("uri", "ipp://localhost:631/jobs/%s" % jobid)
+        return req.doRequest()
+        
             
 if __name__ == "__main__" :            
     if (len(sys.argv) < 2) or (sys.argv[1] == "--debug") :
