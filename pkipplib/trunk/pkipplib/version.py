@@ -1,6 +1,6 @@
 # -*- coding: ISO-8859-15 -*-
 #
-# ipplib : IPP support for Python
+# pkipplib : IPP support for Python
 #
 # (c) 2003, 2004, 2005 Jerome Alet <alet@librelogiciel.com>
 # This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,9 @@
 # $Id$
 #
 
-__version__ = "0.02"
+__version__ = "0.03"
 
-__doc__ = "ipplib : IPP and CUPS support for Python."
+__doc__ = "pkipplib : IPP and CUPS support for Python."
 
 __author__ = "Jerome Alet - alet@librelogiciel.com"
 
