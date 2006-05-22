@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: ISO-8859-15 -*-
 #
-# ipplib : IPP and CUPS support for Python
+# pkipplib : IPP and CUPS support for Python
 #
 # (c) 2003, 2004, 2005, 2006 Jerome Alet <alet@librelogiciel.com>
 # This program is free software; you can redistribute it and/or modify
@@ -25,13 +25,13 @@ import os
 import imp
 from distutils.core import setup
 
-version = imp.load_source("version", os.path.join("ipplib", "version.py"))
+version = imp.load_source("version", os.path.join("pkipplib", "version.py"))
 
-setup(name = "ipplib", version = version.__version__,
+setup(name = "pkipplib", version = version.__version__,
       license = "GNU GPL",
       description = version.__doc__,
       author = "Jerome Alet",
       author_email = "alet@librelogiciel.com",
       url = "http://www.librelogiciel.com/software/",
-      packages = [ "ipplib" ])
+      packages = [ "pkipplib" ])
 
