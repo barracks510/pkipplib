@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: ISO-8859-15 -*-
 #
-# ipplib : IPP and CUPS support for Python
+# pkipplib : IPP and CUPS support for Python
 #
 # (c) 2003, 2004, 2005, 2006 Jerome Alet <alet@librelogiciel.com>
 # This program is free software; you can redistribute it and/or modify
@@ -22,10 +22,10 @@
 
 import sys
 
-sys.path.insert(0, "../ipplib")
-import ipplib        
+sys.path.insert(0, "../pkipplib")
+import pkipplib        
     
-cups = ipplib.CUPS()    
+cups = pkipplib.CUPS()    
 answer = cups.getPPD("HL6050DN")
 #answer = cups.getJobAttributes(566)
 print answer
