@@ -32,6 +32,6 @@ setup(name = "pkipplib", version = version.__version__,
       description = version.__doc__,
       author = "Jerome Alet",
       author_email = "alet@librelogiciel.com",
-      url = "http://www.librelogiciel.com/software/",
+      url = "http://www.pykota.com/software/pkipplib",
       packages = [ "pkipplib" ])
 
