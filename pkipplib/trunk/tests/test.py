@@ -25,9 +25,14 @@ import sys
 sys.path.insert(0, "../pkipplib")
 import pkipplib        
     
-cups = pkipplib.CUPS()    
-answer = cups.getPPD("HL6050DN")
-#answer = cups.getJobAttributes(566)
+# cups = pkipplib.CUPS()
+cups = pkipplib.CUPS(url="http://localhost:631", \
+                     username="jerome", \
+                     password="9!kijd.7")
+# answer = cups.getPPD("HP2100")
+answer = cups.getJobAttributes(150)
+
 print answer
+
 #print answer.operation["attributes-charset"]
 
