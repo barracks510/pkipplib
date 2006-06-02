@@ -108,7 +108,8 @@ print newrequest.operation["attributes-natural-language"]
 # CUPS' API
 from pkipplib import pkipplib
 
-# By default, connects to http://localhost:631
+# Create a CUPS client instance
+# cups = pkipplib.CUPS(url="http://server:631", username="john", password="blah!")
 cups = pkipplib.CUPS()
 
 # High level API : retrieve info about job 3 :

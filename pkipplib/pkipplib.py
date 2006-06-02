@@ -24,6 +24,7 @@
 
 import sys
 import urllib2
+import socket
 from struct import pack, unpack
 
 IPP_VERSION = "1.1"     # default version number
@@ -292,12 +293,15 @@ class IPPRequest :
              data : the complete IPP Message's content.
              debug : a boolean value to output debug info on stderr.
         """
-        self.url = url
+        if url.endswith("/") :
+            url = url[:-1]
+        self.url = url.replace("ipp://", "http://")
         self.username = username
         self.password = password
         self.debug = debug
         self._data = data
         self.parsed = False
+        self.error = None
         
         # Initializes message
         self.setVersion(version)                
@@ -570,14 +574,36 @@ class IPPRequest :
         """   
         if not samerequestid :
             self.nextRequestId()
-        cx = urllib2.Request(url=url or self.url or "http://localhost:631/", 
+            
+        url = url or self.url or "http://localhost:631"
+        cx = urllib2.Request(url=url, \
                              data=self.dump())
         cx.add_header("Content-Type", "application/ipp")
-        response = urllib2.urlopen(cx)
-        datas = response.read()
-        ippresponse = IPPRequest(datas)
-        ippresponse.parse()
-        return ippresponse
+        
+        username = username or self.username
+        password = password or self.password
+        if username :
+            password = password or ""
+            pwmanager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            pwmanager.add_password(None, \
+                                   "%s%s" % (cx.get_host(), cx.get_selector()), \
+                                   username, \
+                                   password)
+            authhandler = urllib2.HTTPBasicAuthHandler(pwmanager)                       
+            opener = urllib2.build_opener(authhandler)
+            urllib2.install_opener(opener)
+            
+        try :    
+            response = urllib2.urlopen(cx)
+        except (urllib2.HTTPError, socket.error), error :    
+            self.error = error
+            return None
+        else :    
+            self.error = None
+            datas = response.read()
+            ippresponse = IPPRequest(datas)
+            ippresponse.parse()
+            return ippresponse
         
             
 class CUPS :
