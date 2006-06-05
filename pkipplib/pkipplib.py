@@ -595,8 +595,9 @@ class IPPRequest :
             
         try :    
             response = urllib2.urlopen(cx)
-        except (urllib2.HTTPError, socket.error), error :    
+        except (urllib2.URLError, urllib2.HTTPError, socket.error), error :    
             self.error = error
+            sys.stderr.write("ERROR : %s\n" % str(error))
             return None
         else :    
             self.error = None
