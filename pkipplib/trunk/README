@@ -129,7 +129,7 @@ for attribute in ("printer-uri-supported",
     request.operation["requested-attributes"] = ("nameWithoutLanguage", attribute)
     
 # Sends this request to the CUPS server    
-answer = request.doRequest()    
+answer = cups.doRequest(request)
 
 # Print the answer as a string of text
 print answer

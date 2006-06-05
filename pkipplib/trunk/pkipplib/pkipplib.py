@@ -23,6 +23,7 @@
 #
 
 import sys
+import os
 import urllib2
 import socket
 from struct import pack, unpack
@@ -282,9 +283,6 @@ class IPPRequest :
     def __init__(self, data="", version=IPP_VERSION, 
                                 operation_id=None, \
                                 request_id=None, \
-                                url = "http://localhost:631", \
-                                username = None, \
-                                password = None, \
                                 debug=False) :
         """Initializes an IPP Message object.
         
@@ -293,15 +291,9 @@ class IPPRequest :
              data : the complete IPP Message's content.
              debug : a boolean value to output debug info on stderr.
         """
-        if url.endswith("/") :
-            url = url[:-1]
-        self.url = url.replace("ipp://", "http://")
-        self.username = username
-        self.password = password
         self.debug = debug
         self._data = data
         self.parsed = False
-        self.error = None
         
         # Initializes message
         self.setVersion(version)                
@@ -421,14 +413,6 @@ class IPPRequest :
         """Sets the request's request id."""
         self.request_id = reqid
         
-    def nextRequestId(self) :        
-        """Increments the current request id and returns the new value."""
-        try :
-            self.request_id += 1
-        except TypeError :    
-            self.request_id = 1
-        return self.request_id
-            
     def dump(self) :    
         """Generates an IPP Message.
         
@@ -436,11 +420,9 @@ class IPPRequest :
         """    
         mybuffer = []
         if None not in (self.version, self.operation_id) :
-            if self.request_id is None :
-                self.nextRequestId()
             mybuffer.append(chr(self.version[0]) + chr(self.version[1]))
             mybuffer.append(pack(">H", self.operation_id))
-            mybuffer.append(pack(">I", self.request_id))
+            mybuffer.append(pack(">I", self.request_id or 1))
             for attrtype in self.attributes_types :
                 for attribute in getattr(self, "_%s_attributes" % attrtype) :
                     if attribute :
@@ -565,86 +547,92 @@ class IPPRequest :
         self._curattributes = self._event_notification_attributes
         return self.parseTag()
         
-    def doRequest(self, url=None, username=None, password=None, samerequestid=False) :
-        """Sends the current request to the URL.
-           NB : only ipp:// URLs are currently unsupported so use
-           either http://host:631/ or https://host:443 instead...
-           
-           returns a new IPPRequest object, containing the parsed answer.
-        """   
-        if not samerequestid :
-            self.nextRequestId()
-            
-        url = url or self.url or "http://localhost:631"
-        cx = urllib2.Request(url=url, \
-                             data=self.dump())
-        cx.add_header("Content-Type", "application/ipp")
-        
-        username = username or self.username
-        password = password or self.password
-        if username :
-            password = password or ""
-            pwmanager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            pwmanager.add_password(None, \
-                                   "%s%s" % (cx.get_host(), cx.get_selector()), \
-                                   username, \
-                                   password)
-            authhandler = urllib2.HTTPBasicAuthHandler(pwmanager)                       
-            opener = urllib2.build_opener(authhandler)
-            urllib2.install_opener(opener)
-            
-        try :    
-            response = urllib2.urlopen(cx)
-        except (urllib2.URLError, urllib2.HTTPError, socket.error), error :    
-            self.error = error
-            return None
-        else :    
-            self.error = None
-            datas = response.read()
-            ippresponse = IPPRequest(datas)
-            ippresponse.parse()
-            return ippresponse
-        
             
 class CUPS :
     """A class for a CUPS instance."""
-    def __init__(self, url="http://localhost:631", username=None, password=None, charset="utf-8", language="en-us") :
+    def __init__(self, url=None, username=None, password=None, charset="utf-8", language="en-us", debug=False) :
         """Initializes the CUPS instance."""
-        self.url = url
+        if url is not None :
+            self.url = url.replace("ipp://", "http://")
+            if self.url.endswith("/") :
+                self.url = self.url[:-1]
+        else :        
+            self.url = self.getDefaultURL()
         self.username = username
         self.password = password
         self.charset = charset
         self.language = language
+        self.debug = debug
         self.lastError = None
         self.lastErrorMessage = None
+        self.requestId = None
         
+    def getDefaultURL(self) :    
+        """Builds a default URL."""
+        # TODO : encryption methods.
+        server = os.environ.get("CUPS_SERVER") or "localhost"
+        port = os.environ.get("IPP_PORT") or 631
+        if server.startswith("/") :
+            # it seems it's a unix domain socket.
+            # we can't handle this right now, so we use the default instead.
+            return "http://localhost:%s" % port
+        else :    
+            return "http://%s:%s" % (server, port)
+            
     def identifierToURI(self, service, ident) :
         """Transforms an identifier into a particular URI depending on requested service."""
         return "%s/%s/%s" % (self.url.replace("http://", "ipp://"),
                              service,
                              ident)
         
+    def nextRequestId(self) :        
+        """Increments the current request id and returns the new value."""
+        try :
+            self.requestId += 1
+        except TypeError :    
+            self.requestId = 1
+        return self.requestId
+            
     def newRequest(self, operationid=None) :
         """Generates a new empty request."""
         if operationid is not None :
             req = IPPRequest(operation_id=operationid, \
-                             url=self.url, \
-                             username=self.username, \
-                             password=self.password)
+                             request_id=self.nextRequestId(), \
+                             debug=self.debug)
             req.operation["attributes-charset"] = ("charset", self.charset)
             req.operation["attributes-natural-language"] = ("naturalLanguage", self.language)
             return req
     
     def doRequest(self, req) :
-        """Does a request and saves its error status in the lastErrorMessage attribute."""
-        result = req.doRequest()
-        self.lastError = req.error
-        if self.lastError is not None :
-            self.lastErrorMessage = str(self.lastError)
+        """Sends a request to the CUPS server.
+           returns a new IPPRequest object, containing the parsed answer.
+        """   
+        connexion = urllib2.Request(url=self.url, \
+                             data=req.dump())
+        connexion.add_header("Content-Type", "application/ipp")
+        if self.username :
+            pwmanager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            pwmanager.add_password(None, \
+                                   "%s%s" % (connexion.get_host(), connexion.get_selector()), \
+                                   self.username, \
+                                   self.password or "")
+            authhandler = urllib2.HTTPBasicAuthHandler(pwmanager)                       
+            opener = urllib2.build_opener(authhandler)
+            urllib2.install_opener(opener)
+        self.lastError = None    
+        self.lastErrorMessage = None
+        try :    
+            response = urllib2.urlopen(connexion)
+        except (urllib2.URLError, urllib2.HTTPError, socket.error), error :    
+            self.lastError = error
+            self.lastErrorMessage = str(error)
+            return None
         else :    
-            self.lastErrorMessage = None
-        return result
-        
+            datas = response.read()
+            ippresponse = IPPRequest(datas)
+            ippresponse.parse()
+            return ippresponse
+    
     def getDefault(self) :
         """Retrieves CUPS' default printer."""
         return self.doRequest(self.newRequest(CUPS_GET_DEFAULT))
@@ -669,21 +657,21 @@ if __name__ == "__main__" :
         print "usage : python pkipplib.py /var/spool/cups/c00005 [--debug] (for example)\n"
     else :    
         infile = open(sys.argv[1], "rb")
-        data = infile.read()
+        filedata = infile.read()
         infile.close()
         
-        message = IPPRequest(data, debug=(sys.argv[-1]=="--debug"))
-        message.parse()
-        message2 = IPPRequest(message.dump())
-        message2.parse()
-        data2 = message2.dump()
+        msg = IPPRequest(filedata, debug=(sys.argv[-1]=="--debug"))
+        msg.parse()
+        msg2 = IPPRequest(msg.dump())
+        msg2.parse()
+        filedata2 = msg2.dump()
         
-        if data == data2 :
+        if filedata == filedata2 :
             print "Test OK : parsing original and parsing the output of the dump produce the same dump !"
-            print str(message)
+            print str(msg)
         else :    
             print "Test Failed !"
-            print str(message)
+            print str(msg)
             print
-            print str(message2)
+            print str(msg2)
         
