@@ -597,7 +597,6 @@ class IPPRequest :
             response = urllib2.urlopen(cx)
         except (urllib2.URLError, urllib2.HTTPError, socket.error), error :    
             self.error = error
-            sys.stderr.write("ERROR : %s\n" % str(error))
             return None
         else :    
             self.error = None
@@ -616,6 +615,8 @@ class CUPS :
         self.password = password
         self.charset = charset
         self.language = language
+        self.lastError = None
+        self.lastErrorMessage = None
         
     def identifierToURI(self, service, ident) :
         """Transforms an identifier into a particular URI depending on requested service."""
@@ -634,15 +635,22 @@ class CUPS :
             req.operation["attributes-natural-language"] = ("naturalLanguage", self.language)
             return req
     
+    def doRequest(self, req) :
+        """Does a request and saves its error status in the lastErrorMessage attribute."""
+        result = req.doRequest()
+        self.lastError = req.error
+        self.lastErrorMessage = str(req.error)
+        return result
+        
     def getDefault(self) :
         """Retrieves CUPS' default printer."""
-        return self.newRequest(CUPS_GET_DEFAULT).doRequest()
+        return self.doRequest(self.newRequest(CUPS_GET_DEFAULT))
     
     def getJobAttributes(self, jobid) :    
         """Retrieves a print job's attributes."""
         req = self.newRequest(IPP_GET_JOB_ATTRIBUTES)
         req.operation["job-uri"] = ("uri", self.identifierToURI("jobs", jobid))
-        return req.doRequest()
+        return self.doRequest(req)
         
     def getPPD(self, queuename) :    
         """Retrieves the PPD for a particular queuename."""
@@ -650,12 +658,12 @@ class CUPS :
         req.operation["printer-uri"] = ("uri", self.identifierToURI("printers", queuename))
         for attrib in ("printer-uri-supported", "printer-type", "member-uris") :
             req.operation["requested-attributes"] = ("nameWithoutLanguage", attrib)
-        return req.doRequest()  # TODO : get the PPD from the actual print server
+        return self.doRequest(req)  # TODO : get the PPD from the actual print server
         
             
 if __name__ == "__main__" :            
     if (len(sys.argv) < 2) or (sys.argv[1] == "--debug") :
-        print "usage : python ipp.py /var/spool/cups/c00005 [--debug] (for example)\n"
+        print "usage : python pkipplib.py /var/spool/cups/c00005 [--debug] (for example)\n"
     else :    
         infile = open(sys.argv[1], "rb")
         data = infile.read()
