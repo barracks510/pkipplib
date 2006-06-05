@@ -639,7 +639,10 @@ class CUPS :
         """Does a request and saves its error status in the lastErrorMessage attribute."""
         result = req.doRequest()
         self.lastError = req.error
-        self.lastErrorMessage = str(req.error)
+        if self.lastError is not None :
+            self.lastErrorMessage = str(self.lastError)
+        else :    
+            self.lastErrorMessage = None
         return result
         
     def getDefault(self) :
