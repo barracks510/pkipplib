@@ -237,6 +237,34 @@ IPP_ERROR_JOB_CANCELLED = 0x0508
 IPP_MULTIPLE_JOBS_NOT_SUPPORTED = 0x0509
 IPP_PRINTER_IS_DEACTIVATED = 0x50a
   
+CUPS_PRINTER_LOCAL = 0x0000
+CUPS_PRINTER_CLASS = 0x0001
+CUPS_PRINTER_REMOTE = 0x0002
+CUPS_PRINTER_BW = 0x0004
+CUPS_PRINTER_COLOR = 0x0008
+CUPS_PRINTER_DUPLEX = 0x0010
+CUPS_PRINTER_STAPLE = 0x0020
+CUPS_PRINTER_COPIES = 0x0040
+CUPS_PRINTER_COLLATE = 0x0080
+CUPS_PRINTER_PUNCH = 0x0100
+CUPS_PRINTER_COVER = 0x0200
+CUPS_PRINTER_BIND = 0x0400
+CUPS_PRINTER_SORT = 0x0800
+CUPS_PRINTER_SMALL = 0x1000
+CUPS_PRINTER_MEDIUM = 0x2000
+CUPS_PRINTER_LARGE = 0x4000
+CUPS_PRINTER_VARIABLE = 0x8000
+CUPS_PRINTER_IMPLICIT = 0x1000
+CUPS_PRINTER_DEFAULT = 0x2000
+CUPS_PRINTER_FAX = 0x4000
+CUPS_PRINTER_REJECTING = 0x8000
+CUPS_PRINTER_DELETE = 0x1000
+CUPS_PRINTER_NOT_SHARED = 0x2000
+CUPS_PRINTER_AUTHENTICATED = 0x4000
+CUPS_PRINTER_COMMANDS = 0x8000
+CUPS_PRINTER_OPTIONS = 0xe6ff
+  
+  
 class IPPError(Exception) :
     """An exception for IPP related stuff."""
     def __init__(self, message = ""):
@@ -267,13 +295,16 @@ class FakeAttribute :
             
     def __getitem__(self, key) :
         """Returns an attribute's value."""
+        answer = []
         attributeslist = getattr(self.request, "_%s_attributes" % self.name)
         for i in range(len(attributeslist)) :
             attribute = attributeslist[i]
             for j in range(len(attribute)) :
                 (attrname, attrvalue) = attribute[j]
                 if attrname == key :
-                    return attrvalue
+                    answer.extend(attrvalue)
+        if answer :
+            return answer
         raise KeyError, key            
     
 class IPPRequest :
@@ -603,11 +634,11 @@ class CUPS :
             req.operation["attributes-natural-language"] = ("naturalLanguage", self.language)
             return req
     
-    def doRequest(self, req) :
+    def doRequest(self, req, url=None) :
         """Sends a request to the CUPS server.
            returns a new IPPRequest object, containing the parsed answer.
         """   
-        connexion = urllib2.Request(url=self.url, \
+        connexion = urllib2.Request(url=url or self.url, \
                              data=req.dump())
         connexion.add_header("Content-Type", "application/ipp")
         if self.username :
@@ -633,6 +664,14 @@ class CUPS :
             ippresponse.parse()
             return ippresponse
     
+    def getPPD(self, queuename) :    
+        """Retrieves the PPD for a particular queuename."""
+        req = self.newRequest(IPP_GET_PRINTER_ATTRIBUTES)
+        req.operation["printer-uri"] = ("uri", self.identifierToURI("printers", queuename))
+        for attrib in ("printer-uri-supported", "printer-type", "member-uris") :
+            req.operation["requested-attributes"] = ("nameWithoutLanguage", attrib)
+        return self.doRequest(req)  # TODO : get the PPD from the actual print server
+        
     def getDefault(self) :
         """Retrieves CUPS' default printer."""
         return self.doRequest(self.newRequest(CUPS_GET_DEFAULT))
@@ -643,14 +682,29 @@ class CUPS :
         req.operation["job-uri"] = ("uri", self.identifierToURI("jobs", jobid))
         return self.doRequest(req)
         
-    def getPPD(self, queuename) :    
-        """Retrieves the PPD for a particular queuename."""
-        req = self.newRequest(IPP_GET_PRINTER_ATTRIBUTES)
-        req.operation["printer-uri"] = ("uri", self.identifierToURI("printers", queuename))
-        for attrib in ("printer-uri-supported", "printer-type", "member-uris") :
-            req.operation["requested-attributes"] = ("nameWithoutLanguage", attrib)
-        return self.doRequest(req)  # TODO : get the PPD from the actual print server
+    def getPrinters(self) :    
+        """Returns the list of print queues names."""
+        req = self.newRequest(CUPS_GET_PRINTERS)
+        req.operation["requested-attributes"] = ("keyword", "printer-name")
+        req.operation["printer-type"] = ("enum", 0)
+        req.operation["printer-type-mask"] = ("enum", CUPS_PRINTER_CLASS)
+        return [printer[1] for printer in self.doRequest(req).printer["printer-name"]]
         
+    def getDevices(self) :    
+        """Returns a list of devices as (deviceclass, deviceinfo, devicemakeandmodel, deviceuri) tuples."""
+        answer = self.doRequest(self.newRequest(CUPS_GET_DEVICES))
+        return zip([d[1] for d in answer.printer["device-class"]], \
+                   [d[1] for d in answer.printer["device-info"]], \
+                   [d[1] for d in answer.printer["device-make-and-model"]], \
+                   [d[1] for d in answer.printer["device-uri"]])
+                   
+    def getPPDs(self) :    
+        """Returns a list of PPDs as (ppdnaturallanguage, ppdmake, ppdmakeandmodel, ppdname) tuples."""
+        answer = self.doRequest(self.newRequest(CUPS_GET_PPDS))
+        return zip([d[1] for d in answer.printer["ppd-natural-language"]], \
+                   [d[1] for d in answer.printer["ppd-make"]], \
+                   [d[1] for d in answer.printer["ppd-make-and-model"]], \
+                   [d[1] for d in answer.printer["ppd-name"]])
             
 if __name__ == "__main__" :            
     if (len(sys.argv) < 2) or (sys.argv[1] == "--debug") :
