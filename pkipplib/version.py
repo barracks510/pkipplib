@@ -20,7 +20,7 @@
 # $Id$
 #
 
-__version__ = "0.06"
+__version__ = "0.07"
 
 __doc__ = "pkipplib : IPP and CUPS support for Python."
 
