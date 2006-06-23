@@ -705,7 +705,40 @@ class CUPS :
                    [d[1] for d in answer.printer["ppd-make"]], \
                    [d[1] for d in answer.printer["ppd-make-and-model"]], \
                    [d[1] for d in answer.printer["ppd-name"]])
+                   
+    def createSubscription(self, uri, events=["all"],
+                                      userdata=None,
+                                      recipient=None,
+                                      pullmethod=None,
+                                      charset=None,
+                                      naturallanguage=None,
+                                      leaseduration=None,
+                                      timeinterval=None,
+                                      jobid=None) :
+        """Creates a printer or server subscription."""
+        req = self.newRequest(IPP_CREATE_PRINTER_SUBSCRIPTION)
+        req.operation["printer-uri"] = ("uri", uri)
+        for event in events :
+            req.subscription["notify-events"] = ("keyword", event)
+        if userdata is not None :    
+            req.subscription["notify-user-data"] = ("octetString-with-an-unspecified-format", userdata)
+        if recipient is not None :    
+            req.subscription["notify-recipient"] = ("uri", recipient)
+        if pullmethod is not None :
+            req.subscription["notify-pull-method"] = ("keyword", pullmethod)
+        if charset is not None :
+            req.subscription["notify-charset"] = ("charset", charset)
+        if naturallanguage is not None :
+            req.subscription["notify-natural-language"] = ("naturalLanguage", naturallanguage)
+        if leaseduration is not None :
+            req.subscription["notify-lease-duration"] = ("integer", leaseduration)
+        if timeinterval is not None :
+            req.subscription["notify-time-interval"] = ("integer", timeinterval)
+        if jobid is not None :
+            req.subscription["notify-job-id"] = ("integer", jobid)
+        return self.doRequest(req)
             
+        
 if __name__ == "__main__" :            
     if (len(sys.argv) < 2) or (sys.argv[1] == "--debug") :
         print "usage : python pkipplib.py /var/spool/cups/c00005 [--debug] (for example)\n"
