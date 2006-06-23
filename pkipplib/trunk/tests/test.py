@@ -25,13 +25,11 @@ import sys
 sys.path.insert(0, "../pkipplib")
 import pkipplib        
     
-# cups = pkipplib.CUPS()
-cups = pkipplib.CUPS(url="http://localhost:631", \
-                     username="jerome", \
-                     password="9!kijd.7")
-# answer = cups.getPPD("HP2100")
-answer = cups.getJobAttributes(150)
-
+cups = pkipplib.CUPS()
+answer = cups.createSubscription("ipp://localhost/", ["printer-added", "printer-deleted"],
+                                                     userdata="samplenotifier:blah",
+                                                     recipient="samplenotifier",
+                                                     charset="utf-8")
 print answer
 
 #print answer.operation["attributes-charset"]
