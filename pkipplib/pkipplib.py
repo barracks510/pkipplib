@@ -715,7 +715,18 @@ class CUPS :
                                       leaseduration=None,
                                       timeinterval=None,
                                       jobid=None) :
-        """Creates a job, printer or server subscription."""
+        """Creates a job, printer or server subscription.
+         
+           uri : the subscription's uri, e.g. ipp://server
+           events : a list of events to subscribe to, e.g. ["printer-added", "printer-deleted"]
+           recipient : the notifier's uri
+           pullmethod : the pull method to use
+           charset : the charset to use when sending notifications
+           naturallanguage : the language to use when sending notifications
+           leaseduration : the duration of the lease in seconds
+           timeinterval : the interval of time during notifications
+           jobid : the optional job id in case of a job subscription
+        """   
         if jobid is not None :
             opid = IPP_CREATE_JOB_SUBSCRIPTION
             uritype = "job-uri"
@@ -745,7 +756,12 @@ class CUPS :
         return self.doRequest(req)
             
     def cancelSubscription(self, uri, subscriptionid, jobid=None) :    
-        """Cancels a subscription."""
+        """Cancels a subscription.
+        
+           uri : the subscription's uri.
+           subscriptionid : the subscription's id.
+           jobid : the optional job's id.
+        """
         req = self.newRequest(IPP_CANCEL_SUBSCRIPTION)
         if jobid is not None :
             uritype = "job-uri"

@@ -141,7 +141,8 @@ Command line tools :
 
   pkipplib currently includes the following command line tools :
   
-        - pksubscribe : can create or delete IPP subscriptions.
+    * pksubscribe : can create or delete IPP subscriptions.
+    
           See pksubscribe --help for details.
         
           examples :
@@ -154,6 +155,13 @@ Command line tools :
             $ pksubscribe --username root \              
                           --password HacKMe \
                           --delete 34 58 98
+                          
+    * samplenotifier : can handle printer-added and printer-deleted
+      notifications and automatically create or remove printers
+      from PyKota's database (just adapt the code for other needs).
+      
+      samplenotifier is present in the notifiers/ directory, but
+      won't be installed automatically.
 
   In the future more command line tools will be included.
   
