@@ -20,6 +20,9 @@
 #
 # $Id$
 
+"""cupssubscribe is a command line tool which can be used to create
+or delete IPP subscriptions."""
+
 import sys
 import locale
 import gettext
@@ -36,7 +39,7 @@ if __name__ == "__main__" :
         gettext.install("cupssubscribe")
     except :
         gettext.NullTranslations().install()
-    parser = optparse.OptionParser(usage="cupssubscribe [options]")
+    parser = optparse.OptionParser(usage="cupssubscribe [options] [subscriptions ids]")
     parser.add_option("-v", "--version", 
                             action="store_true", 
                             dest="version",
@@ -49,6 +52,10 @@ if __name__ == "__main__" :
                             action="store_true", 
                             dest="debug",
                             help=_("activate debug mode."))
+    parser.add_option("-X", "--delete", 
+                            action="store_true", 
+                            dest="delete",
+                            help=_("deletes subscriptions."))
     parser.add_option("-p", "--printer", 
                             dest="printer",
                             help=_("the printer's name for a printer subscription."))
@@ -93,12 +100,12 @@ if __name__ == "__main__" :
     if options.version :
         print "cupssubscribe v%(__version__)s" % globals()
     else :
-        if not options.events :
+        if not options.events and not options.delete :
             sys.stderr.write(_("You MUST pass a list of events to subscribe to.\n"))
-        elif not options.cups :    
-            sys.stderr.write(_("You MUST pass an URL to the CUPS server.\n"))
-        elif not options.recipient :    
+        elif not options.recipient and not options.delete :    
             sys.stderr.write(_("You MUST pass a recipient for the subscription.\n"))
+        elif options.delete and not arguments :    
+            sys.stderr.write(_("You MUST pass a subscriptions ids at the end of your command line.\n"))
         else :    
             cups = pkipplib.CUPS(options.cups,
                                  options.username,
@@ -113,20 +120,30 @@ if __name__ == "__main__" :
                 url = "%s/jobs/%i" % (baseurl, options.job)
             else :    
                 url = baseurl
-            answer = cups.createSubscription(url,
-                                             [e.strip() for e in options.events.split(",")],
-                                             userdata=options.userdata,
-                                             recipient=options.recipient,
-                                             pullmethod=options.pullmethod,
-                                             charset=options.charset,
-                                             naturallanguage=options.language,
-                                             leaseduration=options.duration,
-                                             timeinterval=options.interval,
-                                             jobid=options.job)
-            try :                                 
-                subscriptionid = answer.subscription["notify-subscription-id"][0][1]
-            except KeyError :
-                sys.stderr.write("%s\n" % answer.operation["status-message"][0][1])
-            else :    
-                print "Subscription %i registered." % subscriptionid
+            if not options.delete :    
+                answer = cups.createSubscription(url,
+                                                 [e.strip() for e in options.events.split(",")],
+                                                 userdata=options.userdata,
+                                                 recipient=options.recipient,
+                                                 pullmethod=options.pullmethod,
+                                                 charset=options.charset,
+                                                 naturallanguage=options.language,
+                                                 leaseduration=options.duration,
+                                                 timeinterval=options.interval,
+                                                 jobid=options.job)
+                try :                                 
+                    subscriptionid = answer.subscription["notify-subscription-id"][0][1]
+                except KeyError :
+                    sys.stderr.write("%s\n" % answer.operation["status-message"][0][1])
+                else :    
+                    print "Subscription %i registered." % subscriptionid
+            else :        
+                for subid in [int(arg) for arg in arguments] :
+                    answer = cups.cancelSubscription(url, subid, options.job)
+                    try :
+                        error = answer.operation["status-message"][0][1]
+                    except KeyError :    
+                        print "Subscription %i cancelled." % subid
+                    else :
+                        sys.stderr.write("%s\n" % error)
 
