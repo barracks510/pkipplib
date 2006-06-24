@@ -137,4 +137,26 @@ print answer
 
 =======================================================================
 
+Command line tools :
+
+  pkipplib currently includes the following command line tools :
+  
+        - pksubscribe : can create or delete IPP subscriptions.
+          See pksubscribe --help for details.
+        
+          examples :
+          
+            $ pksubscribe --cups http://localhost:631 \
+                          --events printer-added,printer-deleted \
+                          --recipient mynotifier \
+                          --duration 0
+                          
+            $ pksubscribe --username root \              
+                          --password HacKMe \
+                          --delete 34 58 98
+
+  In the future more command line tools will be included.
+  
+=======================================================================
+
 Please email bug reports, enhancements or comments to : alet@librelogiciel.com
