@@ -33,5 +33,6 @@ setup(name = "pkipplib", version = version.__version__,
       author = "Jerome Alet",
       author_email = "alet@librelogiciel.com",
       url = "http://www.pykota.com/software/pkipplib",
-      packages = [ "pkipplib" ])
+      packages = [ "pkipplib" ],
+      scripts = [os.path.join("bin", "pksubscribe")])
 
