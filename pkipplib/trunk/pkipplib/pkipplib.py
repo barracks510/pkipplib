@@ -715,9 +715,15 @@ class CUPS :
                                       leaseduration=None,
                                       timeinterval=None,
                                       jobid=None) :
-        """Creates a printer or server subscription."""
-        req = self.newRequest(IPP_CREATE_PRINTER_SUBSCRIPTION)
-        req.operation["printer-uri"] = ("uri", uri)
+        """Creates a job, printer or server subscription."""
+        if jobid is not None :
+            opid = IPP_CREATE_JOB_SUBSCRIPTION
+            uritype = "job-uri"
+        else :
+            opid = IPP_CREATE_PRINTER_SUBSCRIPTION
+            uritype = "printer-uri"
+        req = self.newRequest(opid)
+        req.operation[uritype] = ("uri", uri)
         for event in events :
             req.subscription["notify-events"] = ("keyword", event)
         if userdata is not None :    
@@ -738,6 +744,16 @@ class CUPS :
             req.subscription["notify-job-id"] = ("integer", jobid)
         return self.doRequest(req)
             
+    def cancelSubscription(self, uri, subscriptionid, jobid=None) :    
+        """Cancels a subscription."""
+        req = self.newRequest(IPP_CANCEL_SUBSCRIPTION)
+        if jobid is not None :
+            uritype = "job-uri"
+        else :
+            uritype = "printer-uri"
+        req.operation[uritype] = ("uri", uri)
+        req.event_notification["notify-subscription-id"] = ("integer", subscriptionid)
+        return self.doRequest(req)
         
 if __name__ == "__main__" :            
     if (len(sys.argv) < 2) or (sys.argv[1] == "--debug") :
