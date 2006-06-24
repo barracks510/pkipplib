@@ -20,7 +20,7 @@
 #
 # $Id$
 
-"""cupssubscribe is a command line tool which can be used to create
+"""pksubscribe is a command line tool which can be used to create
 or delete IPP subscriptions."""
 
 import sys
@@ -36,14 +36,14 @@ if __name__ == "__main__" :
     except (locale.Error, IOError) :
         sys.stderr.write("Problem while setting locale.\n")
     try :
-        gettext.install("cupssubscribe")
+        gettext.install("pksubscribe")
     except :
         gettext.NullTranslations().install()
-    parser = optparse.OptionParser(usage="cupssubscribe [options] [subscriptions ids]")
+    parser = optparse.OptionParser(usage="pksubscribe [options] [subscriptions ids]")
     parser.add_option("-v", "--version", 
                             action="store_true", 
                             dest="version",
-                            help=_("show cupssubscribe's version number and exit."))
+                            help=_("show pksubscribe's version number and exit."))
     parser.add_option("-c", "--cups", 
                             default="http://localhost:631", 
                             dest="cups",
@@ -98,7 +98,7 @@ if __name__ == "__main__" :
                             
     (options, arguments) = parser.parse_args()
     if options.version :
-        print "cupssubscribe v%(__version__)s" % globals()
+        print "pksubscribe v%(__version__)s" % globals()
     else :
         if not options.events and not options.delete :
             sys.stderr.write(_("You MUST pass a list of events to subscribe to.\n"))
