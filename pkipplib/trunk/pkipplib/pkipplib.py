@@ -490,14 +490,14 @@ class IPPRequest :
         self._curname = None
         self._curattributes = None
         
-        self.setVersion((ord(self._data[0]), ord(self._data[1])))
-        self.setOperationId(unpack(">H", self._data[2:4])[0])
-        self.setRequestId(unpack(">I", self._data[4:8])[0])
-        self.position = 8
-        endofattributes = self.tagvalues["end-of-attributes-tag"]
-        maxdelimiter = self.tagvalues["event_notification-attributes-tag"]
-        nulloffset = lambda : 0
         try :
+            self.setVersion((ord(self._data[0]), ord(self._data[1])))
+            self.setOperationId(unpack(">H", self._data[2:4])[0])
+            self.setRequestId(unpack(">I", self._data[4:8])[0])
+            self.position = 8
+            endofattributes = self.tagvalues["end-of-attributes-tag"]
+            maxdelimiter = self.tagvalues["event_notification-attributes-tag"]
+            nulloffset = lambda : 0
             tag = ord(self._data[self.position])
             while tag != endofattributes :
                 self.position += 1
@@ -607,7 +607,8 @@ class CUPS :
         if server.startswith("/") :
             # it seems it's a unix domain socket.
             # we can't handle this right now, so we use the default instead.
-            return "http://localhost:%s" % port
+            # return "http://localhost:%s" % port
+            return "socket:%s" % server
         else :    
             return "http://%s:%s" % (server, port)
             
@@ -639,7 +640,8 @@ class CUPS :
         """Sends a request to the CUPS server.
            returns a new IPPRequest object, containing the parsed answer.
         """   
-        connexion = urllib2.Request(url=url or self.url, \
+        url = url or self.url
+        connexion = urllib2.Request(url=url, \
                              data=req.dump())
         connexion.add_header("Content-Type", "application/ipp")
         if self.username :
@@ -651,6 +653,26 @@ class CUPS :
             authhandler = urllib2.HTTPBasicAuthHandler(pwmanager)                       
             opener = urllib2.build_opener(authhandler)
             urllib2.install_opener(opener)
+        else : # TODO : also do this in the 'if' part     
+            if url.startswith("socket:") : 
+                class SocketHandler(urllib2.HTTPHandler) :
+                    """A class to handle IPP connections over an Unix domain socket."""
+                    def socket_open(self, req) :
+                        """Opens an Unix domain socket for IPP."""
+                        req.host = "localhost"
+                        req.geturl = lambda : req.get_full_url()[7:]
+                        req.info = lambda : "Unix domain socket %s" % req.geturl()
+                        req.get_selector = req.geturl
+                        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                        s.connect(req.get_selector())
+                        s.settimeout(5.0)
+                        sys.stderr.write("Opened [%s]\n" % req.get_selector())
+                        return s
+                        #return s.makefile("r+b")
+                        
+                opener = urllib2.build_opener(SocketHandler())  
+                urllib2.install_opener(opener)
+                sys.stderr.write("Opener installed\n")
         self.lastError = None    
         self.lastErrorMessage = None
         try :    
@@ -660,7 +682,20 @@ class CUPS :
             self.lastErrorMessage = str(error)
             return None
         else :    
-            datas = response.read()
+            bytes = []
+            try :
+                try :
+                    while True :
+                        byte = response.read(1)
+                        if not byte :
+                            break
+                        else :    
+                            bytes.append(byte)
+                except socket.timeout :
+                    pass
+            finally :
+                datas = "".join(bytes)
+            #datas = response.read()
             ippresponse = IPPRequest(datas)
             ippresponse.parse()
             return ippresponse
