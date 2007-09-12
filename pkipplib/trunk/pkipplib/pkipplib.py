@@ -641,13 +641,14 @@ class CUPS :
            returns a new IPPRequest object, containing the parsed answer.
         """   
         url = url or self.url
-        connexion = urllib2.Request(url=url, \
+        connection = urllib2.Request(url=url, \
                              data=req.dump())
-        connexion.add_header("Content-Type", "application/ipp")
+        connection.add_header("Content-Type", "application/ipp")
         if self.username :
             pwmanager = urllib2.HTTPPasswordMgrWithDefaultRealm()
             pwmanager.add_password(None, \
-                                   "%s%s" % (connexion.get_host(), connexion.get_selector()), \
+                                   "%s%s" % (connection.get_host(), \
+                                             connection.get_selector()), \
                                    self.username, \
                                    self.password or "")
             authhandler = urllib2.HTTPBasicAuthHandler(pwmanager)                       
@@ -667,8 +668,7 @@ class CUPS :
                         s.connect(req.get_selector())
                         s.settimeout(5.0)
                         sys.stderr.write("Opened [%s]\n" % req.get_selector())
-                        return s
-                        #return s.makefile("r+b")
+                        return s.makefile(mode="r+b")
                         
                 opener = urllib2.build_opener(SocketHandler())  
                 urllib2.install_opener(opener)
@@ -676,7 +676,7 @@ class CUPS :
         self.lastError = None    
         self.lastErrorMessage = None
         try :    
-            response = urllib2.urlopen(connexion)
+            response = urllib2.urlopen(connection)
         except (urllib2.URLError, urllib2.HTTPError, socket.error), error :    
             self.lastError = error
             self.lastErrorMessage = str(error)
@@ -686,19 +686,25 @@ class CUPS :
             try :
                 try :
                     while True :
-                        byte = response.read(1)
+                        try :
+                            byte = response.read(1)
+                        except AttributeError :    
+                            byte = response.recv(1)
                         if not byte :
                             break
                         else :    
                             bytes.append(byte)
-                except socket.timeout :
+                except socket.error :
+                    sys.stderr.write("socket error\n")
                     pass
             finally :
                 datas = "".join(bytes)
-            #datas = response.read()
-            ippresponse = IPPRequest(datas)
-            ippresponse.parse()
-            return ippresponse
+            if datas :
+                ippresponse = IPPRequest(datas)
+                ippresponse.parse()
+                return ippresponse
+            else :
+                return None
     
     def getPPD(self, queuename) :    
         """Retrieves the PPD for a particular queuename."""
