@@ -590,8 +590,11 @@ class CUPS :
                 self.url = self.url[:-1]
         else :        
             self.url = self.getDefaultURL()
-        self.username = username
-        self.password = password
+            
+        # If no username or password, use the ones set by CUPS, if any
+        self.username = username or os.environ.get("AUTH_USERNAME")
+        self.password = password or os.environ.get("AUTH_PASSWORD")
+        
         self.charset = charset
         self.language = language
         self.debug = debug
@@ -602,13 +605,13 @@ class CUPS :
     def getDefaultURL(self) :    
         """Builds a default URL."""
         # TODO : encryption methods.
-        server = os.environ.get("CUPS_SERVER") or "localhost"
-        port = os.environ.get("IPP_PORT") or 631
+        server = os.environ.get("CUPS_SERVER", "localhost")
+        port = os.environ.get("IPP_PORT", "631")
         if server.startswith("/") :
             # it seems it's a unix domain socket.
             # we can't handle this right now, so we use the default instead.
-            # return "http://localhost:%s" % port
-            return "socket:%s" % server
+            return "http://localhost:%s" % port
+            #return "socket:%s" % server # TODO : make this work !
         else :    
             return "http://%s:%s" % (server, port)
             
