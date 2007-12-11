@@ -582,7 +582,7 @@ class IPPRequest :
             
 class CUPS :
     """A class for a CUPS instance."""
-    def __init__(self, url=None, username=None, password=None, charset="utf-8", language="en-us", debug=False) :
+    def __init__(self, url=None, username=None, password=None, charset="utf-8", language="en-US", debug=False) :
         """Initializes the CUPS instance."""
         if url is not None :
             self.url = url.replace("ipp://", "http://")
@@ -637,6 +637,8 @@ class CUPS :
                              debug=self.debug)
             req.operation["attributes-charset"] = ("charset", self.charset)
             req.operation["attributes-natural-language"] = ("naturalLanguage", self.language)
+            if self.username :
+                req.operation["requesting-user-name"] = ("nameWithoutLanguage", self.username)
             return req
     
     def doRequest(self, req, url=None) :
@@ -789,9 +791,9 @@ class CUPS :
         if pullmethod is not None :
             req.subscription["notify-pull-method"] = ("keyword", pullmethod)
         if charset is not None :
-            req.subscription["notify-charset"] = ("charset", charset)
+            req.subscription["notify-charset"] = ("charset", charset or self.charset)
         if naturallanguage is not None :
-            req.subscription["notify-natural-language"] = ("naturalLanguage", naturallanguage)
+            req.subscription["notify-natural-language"] = ("naturalLanguage", naturallanguage or self.language)
         if leaseduration is not None :
             req.subscription["notify-lease-duration"] = ("integer", leaseduration)
         if timeinterval is not None :

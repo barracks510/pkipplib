@@ -135,14 +135,17 @@ if __name__ == "__main__" :
                 except KeyError :
                     sys.stderr.write("%s\n" % answer.operation["status-message"][0][1])
                 else :    
-                    print "Subscription %i registered." % subscriptionid
+                    print _("Subscription %i registered.") % subscriptionid
             else :        
                 for subid in [int(arg) for arg in arguments] :
                     answer = cups.cancelSubscription(url, subid, options.job)
-                    try :
-                        error = answer.operation["status-message"][0][1]
-                    except KeyError :    
-                        print "Subscription %i cancelled." % subid
-                    else :
-                        sys.stderr.write("%s\n" % error)
+                    if answer :
+                        try :
+                            error = answer.operation["status-message"][0][1]
+                        except KeyError :    
+                            print _("Subscription %i cancelled.") % subid
+                        else :
+                            sys.stderr.write("%s\n" % error)
+                    else :        
+                        sys.stderr.write(_("Incorrect answer (None)\n"))
 
