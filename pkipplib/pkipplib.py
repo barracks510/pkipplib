@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # pkipplib : IPP and CUPS support for Python
 #
@@ -8,12 +8,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -237,7 +237,7 @@ IPP_PRINTER_BUSY = 0x0507
 IPP_ERROR_JOB_CANCELLED = 0x0508
 IPP_MULTIPLE_JOBS_NOT_SUPPORTED = 0x0509
 IPP_PRINTER_IS_DEACTIVATED = 0x50a
-  
+
 CUPS_PRINTER_LOCAL = 0x0000
 CUPS_PRINTER_CLASS = 0x0001
 CUPS_PRINTER_REMOTE = 0x0002
@@ -264,8 +264,8 @@ CUPS_PRINTER_NOT_SHARED = 0x2000
 CUPS_PRINTER_AUTHENTICATED = 0x4000
 CUPS_PRINTER_COMMANDS = 0x8000
 CUPS_PRINTER_OPTIONS = 0xe6ff
-  
-  
+
+
 class IPPError(Exception) :
     """An exception for IPP related stuff."""
     def __init__(self, message = ""):
@@ -281,7 +281,7 @@ class FakeAttribute :
         """Initializes the fake attribute."""
         self.request = request
         self.name = name
-        
+
     def __setitem__(self, key, value) :
         """Appends the value to the real attribute."""
         attributeslist = getattr(self.request, "_%s_attributes" % self.name)
@@ -292,8 +292,8 @@ class FakeAttribute :
                 if attrname == key :
                     attribute[j][1].append(value)
                     return
-            attribute.append((key, [value]))        
-            
+            attribute.append((key, [value]))
+
     def __getitem__(self, key) :
         """Returns an attribute's value."""
         answer = []
@@ -306,39 +306,39 @@ class FakeAttribute :
                     answer.extend(attrvalue)
         if answer :
             return answer
-        raise KeyError, key            
-    
+        raise KeyError, key
+
 class IPPRequest :
     """A class for IPP requests."""
     attributes_types = ("operation", "job", "printer", "unsupported", \
                                      "subscription", "event_notification")
-    def __init__(self, data="", version=IPP_VERSION, 
+    def __init__(self, data="", version=IPP_VERSION,
                                 operation_id=None, \
                                 request_id=None, \
                                 debug=False) :
         """Initializes an IPP Message object.
-        
+
            Parameters :
-           
+
              data : the complete IPP Message's content.
              debug : a boolean value to output debug info on stderr.
         """
         self.debug = debug
         self._data = data
         self.parsed = False
-        
+
         # Initializes message
-        self.setVersion(version)                
+        self.setVersion(version)
         self.setOperationId(operation_id)
         self.setRequestId(request_id)
         self.data = ""
-        
+
         for attrtype in self.attributes_types :
             setattr(self, "_%s_attributes" % attrtype, [[]])
-        
-        # Initialize tags    
+
+        # Initialize tags
         self.tags = [ None ] * 256 # by default all tags reserved
-        
+
         # Delimiter tags
         self.tags[0x01] = "operation-attributes-tag"
         self.tags[0x02] = "job-attributes-tag"
@@ -347,7 +347,7 @@ class IPPRequest :
         self.tags[0x05] = "unsupported-attributes-tag"
         self.tags[0x06] = "subscription-attributes-tag"
         self.tags[0x07] = "event_notification-attributes-tag"
-        
+
         # out of band values
         self.tags[0x10] = "unsupported"
         self.tags[0x11] = "reserved-for-future-default"
@@ -356,13 +356,13 @@ class IPPRequest :
         self.tags[0x15] = "not-settable"
         self.tags[0x16] = "delete-attribute"
         self.tags[0x17] = "admin-define"
-  
+
         # integer values
         self.tags[0x20] = "generic-integer"
         self.tags[0x21] = "integer"
         self.tags[0x22] = "boolean"
         self.tags[0x23] = "enum"
-        
+
         # octetString
         self.tags[0x30] = "octetString-with-an-unspecified-format"
         self.tags[0x31] = "dateTime"
@@ -372,7 +372,7 @@ class IPPRequest :
         self.tags[0x35] = "textWithLanguage"
         self.tags[0x36] = "nameWithLanguage"
         self.tags[0x37] = "endCollection"
-        
+
         # character strings
         self.tags[0x40] = "generic-character-string"
         self.tags[0x41] = "textWithoutLanguage"
@@ -384,22 +384,22 @@ class IPPRequest :
         self.tags[0x48] = "naturalLanguage"
         self.tags[0x49] = "mimeMediaType"
         self.tags[0x4a] = "memberAttrName"
-        
+
         # Reverse mapping to generate IPP messages
         self.tagvalues = {}
         for i in range(len(self.tags)) :
             value = self.tags[i]
             if value is not None :
                 self.tagvalues[value] = i
-                                     
-    def __getattr__(self, name) :                                 
+
+    def __getattr__(self, name) :
         """Fakes attribute access."""
         if name in self.attributes_types :
             return FakeAttribute(self, name)
         else :
             raise AttributeError, name
-            
-    def __str__(self) :        
+
+    def __str__(self) :
         """Returns the parsed IPP message in a readable form."""
         if not self.parsed :
             return ""
@@ -413,16 +413,16 @@ class IPPRequest :
                     mybuffer.append("%s attributes :" % attrtype.title())
                 for (name, value) in attribute :
                     mybuffer.append("  %s : %s" % (name, value))
-        if self.data :            
+        if self.data :
             mybuffer.append("IPP datas : %s" % repr(self.data))
         return "\n".join(mybuffer)
-        
-    def logDebug(self, msg) :    
+
+    def logDebug(self, msg) :
         """Prints a debug message."""
         if self.debug :
             sys.stderr.write("%s\n" % msg)
             sys.stderr.flush()
-            
+
     def setVersion(self, version) :
         """Sets the request's operation id."""
         if version is not None :
@@ -431,25 +431,25 @@ class IPPRequest :
             except AttributeError :
                 if len(version) == 2 : # 2-tuple
                     self.version = version
-                else :    
+                else :
                     try :
                         self.version = [int(p) for p in str(float(version)).split(".")]
                     except :
                         self.version = [int(p) for p in IPP_VERSION.split(".")]
-        
-    def setOperationId(self, opid) :        
+
+    def setOperationId(self, opid) :
         """Sets the request's operation id."""
         self.operation_id = opid
-        
-    def setRequestId(self, reqid) :        
+
+    def setRequestId(self, reqid) :
         """Sets the request's request id."""
         self.request_id = reqid
-        
-    def dump(self) :    
+
+    def dump(self) :
         """Generates an IPP Message.
-        
+
            Returns the message as a string of text.
-        """    
+        """
         mybuffer = []
         if None not in (self.version, self.operation_id) :
             mybuffer.append(chr(self.version[0]) + chr(self.version[1]))
@@ -467,7 +467,7 @@ class IPPRequest :
                                 mybuffer.append(pack(">H", len(attrname)))
                                 mybuffer.append(attrname)
                                 nameprinted = 1
-                            else :     
+                            else :
                                 mybuffer.append(pack(">H", 0))
                             if vtype in ("integer", "enum") :
                                 mybuffer.append(pack(">H", 4))
@@ -475,21 +475,21 @@ class IPPRequest :
                             elif vtype == "boolean" :
                                 mybuffer.append(pack(">H", 1))
                                 mybuffer.append(chr(val))
-                            else :    
+                            else :
                                 mybuffer.append(pack(">H", len(val)))
                                 mybuffer.append(val)
             mybuffer.append(chr(self.tagvalues["end-of-attributes-tag"]))
-        mybuffer.append(self.data)    
+        mybuffer.append(self.data)
         return "".join(mybuffer)
-            
+
     def parse(self) :
         """Parses an IPP Request.
-        
+
            NB : Only a subset of RFC2910 is implemented.
         """
         self._curname = None
         self._curattributes = None
-        
+
         try :
             self.setVersion((ord(self._data[0]), ord(self._data[1])))
             self.setOperationId(unpack(">H", self._data[2:4])[0])
@@ -508,17 +508,17 @@ class IPPRequest :
                     if ord(self._data[self.position]) > maxdelimiter :
                         self.position -= 1
                         continue
-                oldtag = tag        
+                oldtag = tag
                 tag = ord(self._data[self.position])
                 if tag == oldtag :
                     self._curattributes.append([])
         except IndexError :
             raise IPPError, "Unexpected end of IPP message."
-            
-        self.data = self._data[self.position+1:]            
+
+        self.data = self._data[self.position+1:]
         self.parsed = True
-        
-    def parseTag(self) :    
+
+    def parseTag(self) :
         """Extracts information from an IPP tag."""
         pos = self.position
         tagtype = self.tags[ord(self._data[pos])]
@@ -527,7 +527,7 @@ class IPPRequest :
         namelength = unpack(">H", self._data[pos:pos2])[0]
         if not namelength :
             name = self._curname
-        else :    
+        else :
             posend += namelength
             self._curname = name = self._data[pos2:posend]
         pos2 = posend + 2
@@ -536,50 +536,50 @@ class IPPRequest :
         value = self._data[pos2:posend]
         if tagtype in ("integer", "enum") :
             value = unpack(">I", value)[0]
-        elif tagtype == "boolean" :    
+        elif tagtype == "boolean" :
             value = ord(value)
-        try :    
+        try :
             (oldname, oldval) = self._curattributes[-1][-1]
             if oldname == name :
                 oldval.append((tagtype, value))
-            else :    
+            else :
                 raise IndexError
-        except IndexError :    
+        except IndexError :
             self._curattributes[-1].append((name, [(tagtype, value)]))
         self.logDebug("%s(%s) : %s" % (name, tagtype, value))
         return posend - self.position
-        
-    def operation_attributes_tag(self) : 
+
+    def operation_attributes_tag(self) :
         """Indicates that the parser enters into an operation-attributes-tag group."""
         self._curattributes = self._operation_attributes
         return self.parseTag()
-        
-    def job_attributes_tag(self) : 
+
+    def job_attributes_tag(self) :
         """Indicates that the parser enters into a job-attributes-tag group."""
         self._curattributes = self._job_attributes
         return self.parseTag()
-        
-    def printer_attributes_tag(self) : 
+
+    def printer_attributes_tag(self) :
         """Indicates that the parser enters into a printer-attributes-tag group."""
         self._curattributes = self._printer_attributes
         return self.parseTag()
-        
-    def unsupported_attributes_tag(self) : 
+
+    def unsupported_attributes_tag(self) :
         """Indicates that the parser enters into an unsupported-attributes-tag group."""
         self._curattributes = self._unsupported_attributes
         return self.parseTag()
-        
-    def subscription_attributes_tag(self) : 
+
+    def subscription_attributes_tag(self) :
         """Indicates that the parser enters into a subscription-attributes-tag group."""
         self._curattributes = self._subscription_attributes
         return self.parseTag()
-        
-    def event_notification_attributes_tag(self) : 
+
+    def event_notification_attributes_tag(self) :
         """Indicates that the parser enters into an event-notification-attributes-tag group."""
         self._curattributes = self._event_notification_attributes
         return self.parseTag()
-        
-            
+
+
 class CUPS :
     """A class for a CUPS instance."""
     def __init__(self, url=None, username=None, password=None, charset="utf-8", language="en-US", debug=False) :
@@ -588,21 +588,21 @@ class CUPS :
             self.url = url.replace("ipp://", "http://")
             if self.url.endswith("/") :
                 self.url = self.url[:-1]
-        else :        
+        else :
             self.url = self.getDefaultURL()
-            
+
         # If no username or password, use the ones set by CUPS, if any
         self.username = username or os.environ.get("AUTH_USERNAME")
         self.password = password or os.environ.get("AUTH_PASSWORD")
-        
+
         self.charset = charset
         self.language = language
         self.debug = debug
         self.lastError = None
         self.lastErrorMessage = None
         self.requestId = None
-        
-    def getDefaultURL(self) :    
+
+    def getDefaultURL(self) :
         """Builds a default URL."""
         # TODO : encryption methods.
         server = os.environ.get("CUPS_SERVER", "localhost")
@@ -612,23 +612,23 @@ class CUPS :
             # we can't handle this right now, so we use the default instead.
             return "http://localhost:%s" % port
             #return "socket:%s" % server # TODO : make this work !
-        else :    
+        else :
             return "http://%s:%s" % (server, port)
-            
+
     def identifierToURI(self, service, ident) :
         """Transforms an identifier into a particular URI depending on requested service."""
         return "%s/%s/%s" % (self.url.replace("http://", "ipp://"),
                              service,
                              ident)
-        
-    def nextRequestId(self) :        
+
+    def nextRequestId(self) :
         """Increments the current request id and returns the new value."""
         try :
             self.requestId += 1
-        except TypeError :    
+        except TypeError :
             self.requestId = 1
         return self.requestId
-            
+
     def newRequest(self, operationid=None) :
         """Generates a new empty request."""
         if operationid is not None :
@@ -640,11 +640,11 @@ class CUPS :
             if self.username :
                 req.operation["requesting-user-name"] = ("nameWithoutLanguage", self.username)
             return req
-    
+
     def doRequest(self, req, url=None) :
         """Sends a request to the CUPS server.
            returns a new IPPRequest object, containing the parsed answer.
-        """   
+        """
         url = url or self.url
         connection = urllib2.Request(url=url, \
                              data=req.dump())
@@ -656,11 +656,11 @@ class CUPS :
                                              connection.get_selector()), \
                                    self.username, \
                                    self.password or "")
-            authhandler = urllib2.HTTPBasicAuthHandler(pwmanager)                       
+            authhandler = urllib2.HTTPBasicAuthHandler(pwmanager)
             opener = urllib2.build_opener(authhandler)
             urllib2.install_opener(opener)
-        else : # TODO : also do this in the 'if' part     
-            if url.startswith("socket:") : 
+        else : # TODO : also do this in the 'if' part
+            if url.startswith("socket:") :
                 class SocketHandler(urllib2.HTTPHandler) :
                     """A class to handle IPP connections over an Unix domain socket."""
                     def socket_open(self, req) :
@@ -674,30 +674,30 @@ class CUPS :
                         s.settimeout(5.0)
                         sys.stderr.write("Opened [%s]\n" % req.get_selector())
                         return s.makefile(mode="r+b")
-                        
-                opener = urllib2.build_opener(SocketHandler())  
+
+                opener = urllib2.build_opener(SocketHandler())
                 urllib2.install_opener(opener)
                 sys.stderr.write("Opener installed\n")
-        self.lastError = None    
+        self.lastError = None
         self.lastErrorMessage = None
-        try :    
+        try :
             response = urllib2.urlopen(connection)
-        except (urllib2.URLError, urllib2.HTTPError, socket.error), error :    
+        except (urllib2.URLError, urllib2.HTTPError, socket.error), error :
             self.lastError = error
             self.lastErrorMessage = str(error)
             return None
-        else :    
+        else :
             bytes = []
             try :
                 try :
                     while True :
                         try :
                             byte = response.read(1)
-                        except AttributeError :    
+                        except AttributeError :
                             byte = response.recv(1)
                         if not byte :
                             break
-                        else :    
+                        else :
                             bytes.append(byte)
                 except socket.error :
                     sys.stderr.write("socket error\n")
@@ -710,49 +710,49 @@ class CUPS :
                 return ippresponse
             else :
                 return None
-    
-    def getPPD(self, queuename) :    
+
+    def getPPD(self, queuename) :
         """Retrieves the PPD for a particular queuename."""
         req = self.newRequest(IPP_GET_PRINTER_ATTRIBUTES)
         req.operation["printer-uri"] = ("uri", self.identifierToURI("printers", queuename))
         for attrib in ("printer-uri-supported", "printer-type", "member-uris") :
             req.operation["requested-attributes"] = ("nameWithoutLanguage", attrib)
         return self.doRequest(req)  # TODO : get the PPD from the actual print server
-        
+
     def getDefault(self) :
         """Retrieves CUPS' default printer."""
         return self.doRequest(self.newRequest(CUPS_GET_DEFAULT))
-    
-    def getJobAttributes(self, jobid) :    
+
+    def getJobAttributes(self, jobid) :
         """Retrieves a print job's attributes."""
         req = self.newRequest(IPP_GET_JOB_ATTRIBUTES)
         req.operation["job-uri"] = ("uri", self.identifierToURI("jobs", jobid))
         return self.doRequest(req)
-        
-    def getPrinters(self) :    
+
+    def getPrinters(self) :
         """Returns the list of print queues names."""
         req = self.newRequest(CUPS_GET_PRINTERS)
         req.operation["requested-attributes"] = ("keyword", "printer-name")
         req.operation["printer-type"] = ("enum", 0)
         req.operation["printer-type-mask"] = ("enum", CUPS_PRINTER_CLASS)
         return [printer[1] for printer in self.doRequest(req).printer["printer-name"]]
-        
-    def getDevices(self) :    
+
+    def getDevices(self) :
         """Returns a list of devices as (deviceclass, deviceinfo, devicemakeandmodel, deviceuri) tuples."""
         answer = self.doRequest(self.newRequest(CUPS_GET_DEVICES))
         return zip([d[1] for d in answer.printer["device-class"]], \
                    [d[1] for d in answer.printer["device-info"]], \
                    [d[1] for d in answer.printer["device-make-and-model"]], \
                    [d[1] for d in answer.printer["device-uri"]])
-                   
-    def getPPDs(self) :    
+
+    def getPPDs(self) :
         """Returns a list of PPDs as (ppdnaturallanguage, ppdmake, ppdmakeandmodel, ppdname) tuples."""
         answer = self.doRequest(self.newRequest(CUPS_GET_PPDS))
         return zip([d[1] for d in answer.printer["ppd-natural-language"]], \
                    [d[1] for d in answer.printer["ppd-make"]], \
                    [d[1] for d in answer.printer["ppd-make-and-model"]], \
                    [d[1] for d in answer.printer["ppd-name"]])
-                   
+
     def createSubscription(self, uri, events=["all"],
                                       userdata=None,
                                       recipient=None,
@@ -763,7 +763,7 @@ class CUPS :
                                       timeinterval=None,
                                       jobid=None) :
         """Creates a job, printer or server subscription.
-         
+
            uri : the subscription's uri, e.g. ipp://server
            events : a list of events to subscribe to, e.g. ["printer-added", "printer-deleted"]
            recipient : the notifier's uri
@@ -773,7 +773,7 @@ class CUPS :
            leaseduration : the duration of the lease in seconds
            timeinterval : the interval of time during notifications
            jobid : the optional job id in case of a job subscription
-        """   
+        """
         if jobid is not None :
             opid = IPP_CREATE_JOB_SUBSCRIPTION
             uritype = "job-uri"
@@ -784,9 +784,9 @@ class CUPS :
         req.operation[uritype] = ("uri", uri)
         for event in events :
             req.subscription["notify-events"] = ("keyword", event)
-        if userdata is not None :    
+        if userdata is not None :
             req.subscription["notify-user-data"] = ("octetString-with-an-unspecified-format", userdata)
-        if recipient is not None :    
+        if recipient is not None :
             req.subscription["notify-recipient"] = ("uri", recipient)
         if pullmethod is not None :
             req.subscription["notify-pull-method"] = ("keyword", pullmethod)
@@ -801,10 +801,10 @@ class CUPS :
         if jobid is not None :
             req.subscription["notify-job-id"] = ("integer", jobid)
         return self.doRequest(req)
-            
-    def cancelSubscription(self, uri, subscriptionid, jobid=None) :    
+
+    def cancelSubscription(self, uri, subscriptionid, jobid=None) :
         """Cancels a subscription.
-        
+
            uri : the subscription's uri.
            subscriptionid : the subscription's id.
            jobid : the optional job's id.
@@ -817,27 +817,27 @@ class CUPS :
         req.operation[uritype] = ("uri", uri)
         req.event_notification["notify-subscription-id"] = ("integer", subscriptionid)
         return self.doRequest(req)
-        
-if __name__ == "__main__" :            
+
+if __name__ == "__main__" :
     if (len(sys.argv) < 2) or (sys.argv[1] == "--debug") :
         print "usage : python pkipplib.py /var/spool/cups/c00005 [--debug] (for example)\n"
-    else :    
+    else :
         infile = open(sys.argv[1], "rb")
         filedata = infile.read()
         infile.close()
-        
+
         msg = IPPRequest(filedata, debug=(sys.argv[-1]=="--debug"))
         msg.parse()
         msg2 = IPPRequest(msg.dump())
         msg2.parse()
         filedata2 = msg2.dump()
-        
+
         if filedata == filedata2 :
             print "Test OK : parsing original and parsing the output of the dump produce the same dump !"
             print str(msg)
-        else :    
+        else :
             print "Test Failed !"
             print str(msg)
             print
             print str(msg2)
-        
+
