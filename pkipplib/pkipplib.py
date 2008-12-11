@@ -649,6 +649,7 @@ class CUPS :
         connection = urllib2.Request(url=url, \
                              data=req.dump())
         connection.add_header("Content-Type", "application/ipp")
+        proxyhandler = urllib2.ProxyHandler({})
         if self.username :
             pwmanager = urllib2.HTTPPasswordMgrWithDefaultRealm()
             pwmanager.add_password(None, \
@@ -657,10 +658,11 @@ class CUPS :
                                    self.username, \
                                    self.password or "")
             authhandler = urllib2.HTTPBasicAuthHandler(pwmanager)
-            opener = urllib2.build_opener(authhandler)
-            urllib2.install_opener(opener)
+            opener = urllib2.build_opener(proxyhandler, authhandler)
         else : # TODO : also do this in the 'if' part
-            if url.startswith("socket:") :
+            if not url.startswith("socket:") :
+                opener = urllib2.build_opener(proxyhandler)
+            else :
                 class SocketHandler(urllib2.HTTPHandler) :
                     """A class to handle IPP connections over an Unix domain socket."""
                     def socket_open(self, req) :
@@ -675,9 +677,9 @@ class CUPS :
                         sys.stderr.write("Opened [%s]\n" % req.get_selector())
                         return s.makefile(mode="r+b")
 
-                opener = urllib2.build_opener(SocketHandler())
-                urllib2.install_opener(opener)
-                sys.stderr.write("Opener installed\n")
+                opener = urllib2.build_opener(proxyhandler, SocketHandler())
+
+        urllib2.install_opener(opener)
         self.lastError = None
         self.lastErrorMessage = None
         try :
