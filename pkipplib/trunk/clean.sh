@@ -1,4 +1,4 @@
-y#! /bin/sh
+#! /bin/sh
 #
 # pkipplib : IPP support for Python
 #
