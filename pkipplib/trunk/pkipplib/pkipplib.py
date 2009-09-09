@@ -789,7 +789,7 @@ class CUPS :
         if userdata is not None :
             req.subscription["notify-user-data"] = ("octetString-with-an-unspecified-format", userdata)
         if recipient is not None :
-            req.subscription["notify-recipient"] = ("uri", recipient)
+            req.subscription["notify-recipient-uri"] = ("uri", recipient)
         if pullmethod is not None :
             req.subscription["notify-pull-method"] = ("keyword", pullmethod)
         if charset is not None :
