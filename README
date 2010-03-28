@@ -159,9 +159,12 @@ Command line tools :
       notifications and automatically create or remove printers
       from PyKota's database (just adapt the code for other needs).
 
-      samplenotifier is present in the notifiers/ directory, but
-      won't be installed automatically. You must put it into
-      CUPS' notifier directory, e.g. /usr/lib/cups/notifier/
+    * send-jabber : a notifier that sends Jabber messages, contributed
+                    by Allison Jones.
+
+      samplenotifier and send-jabber are present in the notifiers/
+      directory, but won't be installed automatically. You must put them
+      into CUPS' notifier directory, e.g. /usr/lib/cups/notifier/
 
   In the future more command line tools will be included.
 
