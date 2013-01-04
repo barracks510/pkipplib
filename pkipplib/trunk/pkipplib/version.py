@@ -19,13 +19,15 @@
 # $Id$
 #
 
-__version__ = "1.00alpha"
+import time
+
+__version__ = "1.00alpha1"
 
 __doc__ = "pkipplib : IPP and CUPS support for Python."
 
 __author__ = "Jerome Alet - alet@librelogiciel.com"
 
-__years__ = "2003-2009"
+__years__ = "2003-%s" % time.strftime("%Y", time.localtime(time.time()))
 
 __gplblurb__ = """This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
